@@ -108,3 +108,7 @@ venv.bak/
 
 # environment files
 .envrc
+
+# applition config file
+app/application.ini
+app/tweet-to-speech.json
