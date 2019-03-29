@@ -107,6 +107,7 @@ venv.bak/
 .idea/
 
 # environment files
+.DS_Store
 .envrc
 
 # applition config file
