@@ -95,6 +95,6 @@ def invoke():
 
 
 if __name__ == '__main__':
-    schedule.every(1).minutes.do(invoke)
+    schedule.every(6.5/60).minutes.do(invoke)
     while True:
         schedule.run_pending()

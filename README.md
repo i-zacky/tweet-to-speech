@@ -38,8 +38,8 @@ https://github.com/direnv/direnv
 * 設定ファイルの配置
   ```bash
   $ cp .envrc.origin .envrc
+  $ echo "export GOOGLE_APPLICATION_CREDENTIALS=\"(path to tweet-to-speech.json)\"" > .envrc.origin
   ```
-* .envrcの `GOOGLE_APPLICATION_CREDENTIALS` にText-to-Speechのサービスアカウントキーのファイルパスを記載する
 
 ## アプリケーション起動方法
 ```bash
