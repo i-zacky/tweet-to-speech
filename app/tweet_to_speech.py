@@ -5,6 +5,13 @@ import emoji
 import re
 from google.cloud import texttospeech
 import datetime
+import schedule
+import logging
+
+logging.basicConfig(
+    format='%(asctime)s %(levelname)s %(message)s',
+    level=logging.INFO
+)
 
 '''
 * 設定ファイルの読み込み
@@ -12,10 +19,10 @@ import datetime
   - ツイート収集対象のユーザーリスト(user-list.txt)
 * Cloud Text to Speechのインスタンス化
 '''
-users = open('user-list.txt')
+users = open('config/user-list.txt', 'r', encoding='utf-8', newline=None)
 
 conf = configparser.ConfigParser()
-conf.read('application.ini')
+conf.read('config/application.ini')
 consumer_key = conf.get('twitter', 'consumer_key')
 consumer_secret = conf.get('twitter', 'consumer_secret')
 access_token = conf.get('twitter', 'access_token')
@@ -38,7 +45,7 @@ def crawling_tweet():
 
     tweets = []
     for user in users:
-        print('crawling tweet at: {}'.format(user))
+        logging.info('crawling tweet at: %s', user.replace('\n', ''))
         # 各ユーザーの最新ツイートを1件取得(ただしリツイートは収集対象外)
         for tweet in api.user_timeline(screen_name=user, count=1):
             if hasattr(tweet, 'retweeted_status'):
@@ -47,9 +54,7 @@ def crawling_tweet():
             tweet.text = format_tweet(tweet.text)
             tweets.append(tweet)
 
-    for tweet in tweets:
-        print('convert text to speech. id: {}\n'.format(tweet.id_str))
-        text_to_speech(tweet)
+    return tweets
 
 
 def format_tweet(text):
@@ -62,25 +67,34 @@ def format_tweet(text):
     return re.sub(r'https?:\/\/.*[\r\n]*', '', emoji_removed, flags=re.MULTILINE)
 
 
-def text_to_speech(tweet):
+def text_to_speech(tweets):
     """
     ツイートをGoogle Cloud Text to Speech APIを利用して音声データに変換する
-    :param tweet:
+    :param tweets:
     :return:
     """
-    synthesis_input = texttospeech.types.SynthesisInput(text=tweet.text)
-    voice = texttospeech.types.VoiceSelectionParams(
-        language_code='ja',
-        ssml_gender=texttospeech.enums.SsmlVoiceGender.NEUTRAL)
-    audio_config = texttospeech.types.AudioConfig(
-        audio_encoding=texttospeech.enums.AudioEncoding.MP3)
-    response = client.synthesize_speech(synthesis_input, voice, audio_config)
+    for tweet in tweets:
+        logging.info('convert text to speech. id: %s', tweet.id_str)
 
-    now = datetime.datetime.now()
-    filename = now.strftime('%Y%m%d_%H%M%S_%f')
-    with open('../out/{}.mp3'.format(filename), 'wb') as out:
-        out.write(response.audio_content)
+        synthesis_input = texttospeech.types.SynthesisInput(text=tweet.text)
+        voice = texttospeech.types.VoiceSelectionParams(
+            language_code='ja',
+            ssml_gender=texttospeech.enums.SsmlVoiceGender.NEUTRAL)
+        audio_config = texttospeech.types.AudioConfig(
+            audio_encoding=texttospeech.enums.AudioEncoding.MP3)
+        response = client.synthesize_speech(synthesis_input, voice, audio_config)
+
+        now = datetime.datetime.now()
+        filename = now.strftime('%Y%m%d_%H%M%S_%f')
+        with open('../out/{}.mp3'.format(filename), 'wb') as out:
+            out.write(response.audio_content)
+
+
+def invoke():
+    text_to_speech(crawling_tweet())
 
 
 if __name__ == '__main__':
-    crawling_tweet()
+    schedule.every(1).minutes.do(invoke)
+    while True:
+        schedule.run_pending()

@@ -111,5 +111,8 @@ venv.bak/
 .envrc
 
 # applition config file
-app/application.ini
-app/tweet-to-speech.json
+app/config/application.ini
+app/config/tweet-to-speech.json
+
+# output mp3 files
+out/*.mp3
